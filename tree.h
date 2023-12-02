@@ -1,12 +1,5 @@
 #include <malloc.h>
 #include <math.h>
-#include
-//metodi extra
-int modulo(int pos, int size){
-	double y = -(double)pos/size;  // formula dalla matematica modulare: (size+pos)/size > x >= pos/size
-	return pos += size*ceil(y);
-}
-
 //struttura della lista
 
 typedef struct node{  //nodi collegabili con il successivo e precendente
@@ -117,7 +110,6 @@ void deassign_children(Node *dest, Node *child){
 
 static int del_node(Head *tree, Node *node){
 	if(node->parent == null){
-		printf("non puoi cancellare un nodo root");
 		return -1;
 	}
 	deassign_children(node->parent, node);
