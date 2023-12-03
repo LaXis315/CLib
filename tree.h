@@ -64,11 +64,15 @@ Node *rec_get(Node *root, int key){
 }
 
 void assign_new_childrens(Node *dest,int n_childrens_to_add, Node **new_childrens){
-	int n = (dest -> n_childrens) += n_childrens_to_add;
+	int n = (dest -> n_childrens) + n_childrens_to_add;
 	//rialloco i vecchi nodi
 	dest->childrens = (Node **) realloc(dest->childrens,((sizeof(Node *))*n));
 	//aggiungo alla fine i nuovi
-	*((dest->childrens)+n-n_childrens_to_add) = *new_childrens;
+	for(int i = dest->n_childrens; i < n; i++)
+		*(dest->childrens)[i] = *new_childrens[i-(dest->n_childrens)];
+	
+	//aggiorno il numero di figli
+	dest->n_childrens += n_childrens_to_add;
 }
 
 
