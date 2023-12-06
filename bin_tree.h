@@ -1,42 +1,49 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <stdio.h>
-
-//parameter
-bool lor = 0;
-
-//metodi
-Tree *mk_tree(void);
-Node *mk_node(int key);
-void del_node_by_key(int key);
-void del_node_by_pointer(Node *node);
-void del_head();
-void preoreder_tr(const Tree *tree);
-void postorder_tr(const Tree *tree);
-void inorder_tr(const Tree *tree);
+#include <stdbool.h>
 
 
-
-
-//struttura della lista
-typedef struct data Data; //necessario definirlo
+/*struttura della lista************************************************/
+typedef struct{
+	char name[20];
+	int age;
+} Data;
 
 typedef struct Node Node;
 struct Node{
 	Node *parent;
-	Node * left_child,right_child;
+	Node *left_child, *right_child;
 	int key;
 	Data dati;
 };
-
 
 typedef struct{  //testa che punta alla radice dell' albero e la sua grandezza
 	int size;
 	Node *root;  //puntatore alla radice
 } Tree;
 
-/*****************************************************************/
-//inizializzazione 
+/*global parameters****************************************************/
+bool lor = 0;
+
+/*function pointers****************************************************/
+typedef void (*node_handler_t) (Node * node);
+
+/*metodi***************************************************************/
+Tree *mk_tree(void);
+Node *mk_node(int key);
+void add_node(Tree* tree, int key);
+void del_node_by_key(Tree *tree, int key);
+void del_node_by_pointer(Node *node);
+void del_head();
+Node *find(Tree *tree, int key);
+void preoreder_tr(Node *root, node_handler_t function);
+void postorder_tr(Node *root, node_handler_t function);
+void inorder_tr(Node *root, node_handler_t function);
+void print_node_key(const Node* node);
+
+/*inizializzazione*****************************************************/
+ 
 
 Tree *mk_tree(void){
 
@@ -56,11 +63,32 @@ Node *mk_node(int key){
 	return node;
 }
 
+/*Incremento************************************************************/
 
-//Liberazione di memoria
+void add_node(Tree *tree, int key){
+	Node *node = mk_node(key);
+	if(tree->root == NULL){
+		tree->root = node;
+		return;
+	}
 
-void del_node_by_key(int key){
-	Node* node = find(int key);
+	Node **walk = &(tree->root);
+
+	while(*walk){ 
+		if(key <= (*walk)->key) //i nodi con stessa chiave vengono messi a sinistra del genitore
+			walk = &((*walk)->left_child);//pointer magic
+		else
+			walk = &((*walk)->right_child);//pointer magic
+	}
+
+	*walk = node;
+}
+
+
+/*Liberazione di memoria**********************************************************/
+
+void del_node_by_key(Tree *tree, int key){
+	Node* node = find(tree, key);
 	del_node_by_pointer(node);
 }
 
@@ -77,16 +105,16 @@ static void bidirectional_p(Node *node){ //make the pointers of a node bidirecti
 static void switch_nodes(Node *node1, Node *node2){
 	Node cpynode1;
 	cpynode1.left_child = node1->left_child;
-	cpynode1.right_child = node1->right_child		
+	cpynode1.right_child = node1->right_child;		
 	cpynode1.parent = node1->parent;
 	
 	node1 -> left_child = node2->left_child;
 	node1 -> right_child = node2->right_child;
 	node1 -> parent = node2->parent;
 
-	node2 -> left_child = cpyleaf.left_child;
-	node2 -> right_child = cpyleaf.right_child;
-	node2 -> parent = cpyleaf.parent;	
+	node2 -> left_child = cpynode1.left_child;
+	node2 -> right_child = cpynode1.right_child;
+	node2 -> parent = cpynode1.parent;	
 
 	bidirectional_p(node1);
 	bidirectional_p(node2);
@@ -122,8 +150,52 @@ void del_node_by_pointer(Node *node){
 	free(node);
 }
 
+static void del_leaf(Node *node){ //usare solo se il nodo non ha figli
+	if(node->left_child == NULL || node->right_child == NULL)
+		return;
+	if(node->key <= node->parent->key)
+		node->parent->left_child = NULL;
+	else
+		node->parent->right_child = NULL;
+	free(node);
+}
+
 void del_tree(Tree *tree){
+	node_handler_t deleter = del_leaf;
+	postorder_tr(tree->root, deleter);
+	free(tree);
+}
+
+/*Traversal and finder*******************************************************************************/
+
+Node *find(Tree *tree, int key){
+	Node *walk = tree->root;
+
+	while(walk != NULL || walk->key != key){
+		if(key <= walk->key)
+			walk = walk->left_child;
+		else
+			walk = walk->right_child;
+	}
+
+	return walk;
+}
+
+void postorder_tr(Node *root, node_handler_t function){
+	if(root->left_child != NULL)
+		postorder_tr(root->left_child, function);
+	if(root->right_child != NULL)
+		postorder_tr(root->right_child, function);
+
+	function(root);
+}
 
 
+
+
+/*Stampa key nodo***************************************************************************/
+
+void stampa_key(Node *node){
+	printf("Key: %d\n",node->key);
 }
 
