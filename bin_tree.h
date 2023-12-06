@@ -5,17 +5,19 @@
 
 
 /*struttura della lista************************************************/
-typedef struct{
-	char name[20];
-	int age;
-} Data;
+typedef struct Data Data;
+struct Data{
+		int age;
+		char cazzi_in_culo_porca_puttana[10];
+		int o_the_spiderverse;
+};
 
 typedef struct Node Node;
 struct Node{
 	Node *parent;
 	Node *left_child, *right_child;
 	int key;
-	Data dati;
+	Data *data;
 };
 
 typedef struct{  //testa che punta alla radice dell' albero e la sua grandezza
@@ -32,7 +34,8 @@ typedef void (*node_handler_t) (Node * node);
 /*metodi***************************************************************/
 Tree *mk_tree(void);
 Node *mk_node(int key);
-void add_node(Tree* tree, int key);
+void assign_data(Node *node, Data data);
+Node *add_node(Tree* tree, int key);
 void del_node_by_key(Tree *tree, int key);
 void del_node_by_pointer(Node *node);
 void del_head();
@@ -63,25 +66,39 @@ Node *mk_node(int key){
 	return node;
 }
 
+void assign_data(Node *node, Data data){
+	Data *data_to_assign = malloc(sizeof(Data));
+	*data_to_assign = data;
+	node->data = data_to_assign;
+}
+
 /*Incremento************************************************************/
 
-void add_node(Tree *tree, int key){
+Node *add_node(Tree *tree, int key){
 	Node *node = mk_node(key);
 	if(tree->root == NULL){
 		tree->root = node;
-		return;
+		return node;
 	}
 
 	Node **walk = &(tree->root);
 
-	while(*walk){ 
-		if(key <= (*walk)->key) //i nodi con stessa chiave vengono messi a sinistra del genitore
+	while(true){
+		if(*walk != NULL)
+			node->parent = *walk; //aggiorno all'ultimo genitore conosciuto
+		if(key <= (*walk)->key){ //i nodi con stessa chiave vengono messi a sinistra del genitore
 			walk = &((*walk)->left_child);//pointer magic
-		else
+		}
+		else{
 			walk = &((*walk)->right_child);//pointer magic
+		}
+		
+		if(!*walk)
+			break;
 	}
 
 	*walk = node;
+	return node;
 }
 
 
@@ -147,7 +164,9 @@ void del_node_by_pointer(Node *node){
 	else
 		parent->right_child = child;
 
+	free(node->data);
 	free(node);
+
 }
 
 static void del_leaf(Node *node){ //usare solo se il nodo non ha figli
@@ -198,4 +217,3 @@ void postorder_tr(Node *root, node_handler_t function){
 void stampa_key(Node *node){
 	printf("Key: %d\n",node->key);
 }
-
