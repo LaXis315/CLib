@@ -8,9 +8,10 @@
 typedef struct Data Data;
 struct Data{
 		int age;
-		char cazzi_in_culo_porca_puttana[10];
-		int o_the_spiderverse;
+		char nome[10];
+		int height;
 };
+
 
 typedef struct Node Node;
 struct Node{
@@ -23,6 +24,7 @@ struct Node{
 typedef struct{  //testa che punta alla radice dell' albero e la sua grandezza
 	int size;
 	Node *root;  //puntatore alla radice
+	/* Inserire qui i vari metodi per i nodi tramite puntatore a funzione (cosi da usare tree->metodo1())*/
 } Tree;
 
 /*global parameters****************************************************/
@@ -34,13 +36,15 @@ typedef void (*node_handler_t) (Node * node);
 /*metodi***************************************************************/
 Tree *mk_tree(void);
 Node *mk_node(int key);
-void assign_data(Node *node, Data data);
+void assign_data(Node *node, Data cluster_dati);
 Node *add_node(Tree* tree, int key);
 void del_node_by_key(Tree *tree, int key);
 void del_node_by_pointer(Node *node);
 void del_head();
 Node *find(Tree *tree, int key);
-void preoreder_tr(Node *root, node_handler_t function);
+Data *get_data(Node *node);
+Data *get_data_by_key(Tree *tree, int key);
+void preorder_tr(Node *root, node_handler_t function);
 void postorder_tr(Node *root, node_handler_t function);
 void inorder_tr(Node *root, node_handler_t function);
 void print_node_key(const Node* node);
@@ -62,14 +66,14 @@ Node *mk_node(int key){
 	node -> parent = NULL;
 	node -> left_child = NULL;
 	node -> right_child = NULL;
+	node -> data = NULL;
 	node -> key = key;
 	return node;
 }
 
-void assign_data(Node *node, Data data){
-	Data *data_to_assign = malloc(sizeof(Data));
-	*data_to_assign = data;
-	node->data = data_to_assign;
+void assign_data(Node *node, Data cluster_dati){
+	node->data = malloc(sizeof(Data));
+	*(node->data) = cluster_dati;
 }
 
 /*Incremento************************************************************/
@@ -83,7 +87,7 @@ Node *add_node(Tree *tree, int key){
 
 	Node **walk = &(tree->root);
 
-	while(true){
+	while(*walk){
 		if(*walk != NULL)
 			node->parent = *walk; //aggiorno all'ultimo genitore conosciuto
 		if(key <= (*walk)->key){ //i nodi con stessa chiave vengono messi a sinistra del genitore
@@ -92,9 +96,6 @@ Node *add_node(Tree *tree, int key){
 		else{
 			walk = &((*walk)->right_child);//pointer magic
 		}
-		
-		if(!*walk)
-			break;
 	}
 
 	*walk = node;
@@ -170,6 +171,7 @@ void del_node_by_pointer(Node *node){
 }
 
 static void del_leaf(Node *node){ //usare solo se il nodo non ha figli
+	//printf("Cancellazione nodo con key: %d\n", node->key);
 	if(node->left_child == NULL || node->right_child == NULL)
 		return;
 	if(node->key <= node->parent->key)
@@ -185,19 +187,35 @@ void del_tree(Tree *tree){
 	free(tree);
 }
 
-/*Traversal and finder*******************************************************************************/
+/*Traversal, finder, and get data*************************************************************************/
 
 Node *find(Tree *tree, int key){
 	Node *walk = tree->root;
 
-	while(walk != NULL || walk->key != key){
+	while(walk->key != key){
 		if(key <= walk->key)
 			walk = walk->left_child;
 		else
 			walk = walk->right_child;
+
+		if(walk == NULL)
+			break;
 	}
 
 	return walk;
+}
+
+Data *get_data(Node *node){
+	return node->data;
+}
+
+Data *get_data_by_key(Tree *tree, int key){
+	Node *node = find(tree, key);
+	if(!node)
+		return NULL;
+
+	return get_data(node);
+
 }
 
 void postorder_tr(Node *root, node_handler_t function){
@@ -206,10 +224,29 @@ void postorder_tr(Node *root, node_handler_t function){
 	if(root->right_child != NULL)
 		postorder_tr(root->right_child, function);
 
-	function(root);
+	function(root); //eseguo dopo
 }
 
+void preorder_tr(Node *root, node_handler_t function){
+	function(root); //eseguo subito
 
+	if(root->left_child != NULL)
+		preorder_tr(root->left_child, function);
+	if(root->right_child != NULL)
+		preorder_tr(root->right_child, function);
+}
+
+void inorder_tr(Node *root, node_handler_t function){
+	
+	if(root->left_child != NULL)
+		inorder_tr(root->left_child, function);
+
+	function(root); //eseguo in mezzo
+
+	if(root->right_child != NULL)
+		inorder_tr(root->right_child, function);
+
+}
 
 
 /*Stampa key nodo***************************************************************************/
