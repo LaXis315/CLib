@@ -44,8 +44,8 @@ void del_head();
 Node *find(Tree *tree, int key);
 Data *get_data(Node *node);
 Data *get_data_by_key(Tree *tree, int key);
-void preorder_tr(Node *root, node_handler_t function);
 void postorder_tr(Node *root, node_handler_t function);
+void preorder_tr(Node *root, node_handler_t function);
 void inorder_tr(Node *root, node_handler_t function);
 void print_node_key(const Node* node);
 
@@ -79,17 +79,11 @@ void assign_data(Node *node, Data cluster_dati){
 /*Incremento************************************************************/
 
 Node *add_node(Tree *tree, int key){
-	Node *node = mk_node(key);
-	if(tree->root == NULL){
-		tree->root = node;
-		return node;
-	}
-
 	Node **walk = &(tree->root);
 
 	while(*walk){
-		if(*walk != NULL)
-			node->parent = *walk; //aggiorno all'ultimo genitore conosciuto
+		
+		(*walk)->parent = *walk; //aggiorno all'ultimo genitore conosciuto
 		if(key <= (*walk)->key){ //i nodi con stessa chiave vengono messi a sinistra del genitore
 			walk = &((*walk)->left_child);//pointer magic
 		}
@@ -98,8 +92,8 @@ Node *add_node(Tree *tree, int key){
 		}
 	}
 
-	*walk = node;
-	return node;
+	*walk = mk_node(key);
+	return *walk;
 }
 
 
@@ -172,12 +166,12 @@ void del_node_by_pointer(Node *node){
 
 static void del_leaf(Node *node){ //usare solo se il nodo non ha figli
 	//printf("Cancellazione nodo con key: %d\n", node->key);
-	if(node->left_child == NULL || node->right_child == NULL)
-		return;
 	if(node->key <= node->parent->key)
 		node->parent->left_child = NULL;
 	else
 		node->parent->right_child = NULL;
+	
+	free(node->data);
 	free(node);
 }
 
