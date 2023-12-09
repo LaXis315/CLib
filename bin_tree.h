@@ -7,9 +7,9 @@
 /*struttura della lista************************************************/
 typedef struct Data Data;
 struct Data{
-		int age;
-		char nome[10];
-		int height;
+	int age;
+	char nome[10];
+	int height;
 };
 
 
