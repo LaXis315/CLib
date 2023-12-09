@@ -260,3 +260,23 @@ Node *find_root(Node *node){
 	return node;
 }
 
+Node *rightmost_node(Node *node){
+	while(!node->right_child)
+		node = node->right_child;
+	return node;
+}
+
+Node *leftmost_node(Node *node){
+	while(!node->left_child)
+		node = node->left_child;
+	return node;
+}
+
+int min_key(Node *node){
+	return leftmost_node(node)->key;
+}
+
+int max_key(Node *node){
+	return rightmost_node(node)->key;
+}
+
