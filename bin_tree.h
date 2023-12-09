@@ -21,12 +21,6 @@ struct Node{
 	Data *data;
 };
 
-typedef struct{  //testa che punta alla radice dell' albero e la sua grandezza
-	int size;
-	Node *root;  //puntatore alla radice
-	/* Inserire qui i vari metodi per i nodi tramite puntatore a funzione (cosi da usare tree->metodo1())*/
-} Tree;
-
 /*global parameters****************************************************/
 bool lor = 0;
 
@@ -37,32 +31,24 @@ typedef void (*node_handler_t) (Node * node);
 Tree *mk_tree(void);
 Node *mk_node(int key);
 void assign_data(Node *node, Data cluster_dati);
-Node *add_node(Tree* tree, int key);
-void del_node_by_key(Tree *tree, int key);
+Node *add_node(Node *root, int key);
+void del_node_by_key(Node *root, int key);
 void del_node_by_pointer(Node *node);
-void del_head();
-Node *find(Tree *tree, int key);
+void del_tree(Node *root);
+Node *find(Node *root, int key);
 Data *get_data(Node *node);
-Data *get_data_by_key(Tree *tree, int key);
+Data *get_data_by_key(Node *root, int key);
 void postorder_tr(Node *root, node_handler_t function);
 void preorder_tr(Node *root, node_handler_t function);
 void inorder_tr(Node *root, node_handler_t function);
 void print_node_key(const Node* node);
 
 /*inizializzazione*****************************************************/
- 
-
-Tree *mk_tree(void){
-
-	Tree *tree_head = (Tree*) malloc(sizeof(Tree));
-	tree_head->size = 0;
-	tree_head->root = NULL;
-	return tree_head;
-
-}
 
 Node *mk_node(int key){
 	Node *node = (Node*) malloc(sizeof(Node));
+	if(!node)
+		return NULL;
 	node -> parent = NULL;
 	node -> left_child = NULL;
 	node -> right_child = NULL;
@@ -73,13 +59,15 @@ Node *mk_node(int key){
 
 void assign_data(Node *node, Data cluster_dati){
 	node->data = malloc(sizeof(Data));
+	if(data == NULL)
+		return;
 	*(node->data) = cluster_dati;
 }
 
 /*Incremento************************************************************/
 
-Node *add_node(Tree *tree, int key){
-	Node **walk = &(tree->root);
+Node *add_node(Node *root, int key){
+	Node **walk = &root;
 
 	while(*walk){
 		
@@ -93,14 +81,15 @@ Node *add_node(Tree *tree, int key){
 	}
 
 	*walk = mk_node(key);
+
 	return *walk;
 }
 
 
 /*Liberazione di memoria**********************************************************/
 
-void del_node_by_key(Tree *tree, int key){
-	Node* node = find(tree, key);
+void del_node_by_key(Node *root, int key){
+	Node* node = find(root, key);
 	del_node_by_pointer(node);
 }
 
@@ -133,6 +122,8 @@ static void switch_nodes(Node *node1, Node *node2){
 }
 
 void del_node_by_pointer(Node *node){
+	if(node == NULL)
+		return;
 	if(node->left_child != NULL && node->right_child != NULL){  //se ho due figli, scambio il nodo con una foglia specifica
 		Node *leaf;
 		if(lor){
@@ -161,10 +152,9 @@ void del_node_by_pointer(Node *node){
 
 	free(node->data);
 	free(node);
-
 }
 
-static void del_leaf(Node *node){ //usare solo se il nodo non ha figli
+static void del_leaf(Node *node){ //usare solo in del_tree()
 	//printf("Cancellazione nodo con key: %d\n", node->key);
 	if(node->key <= node->parent->key)
 		node->parent->left_child = NULL;
@@ -175,28 +165,34 @@ static void del_leaf(Node *node){ //usare solo se il nodo non ha figli
 	free(node);
 }
 
-void del_tree(Tree *tree){
+void del_tree(Node *root){
 	node_handler_t deleter = del_leaf;
+
+	/*scollego il padre se esiste*/
+	if(root->parent != NULL)
+		if(root->key <= root->parent->key)
+			root->parent->left_child = NULL;
+		else
+			root->parent->right_child = NULL;
+
 	postorder_tr(tree->root, deleter);
-	free(tree);
 }
 
 /*Traversal, finder, and get data*************************************************************************/
 
-Node *find(Tree *tree, int key){
-	Node *walk = tree->root;
+Node *find(Node *root, int key){
 
-	while(walk->key != key){
-		if(key <= walk->key)
-			walk = walk->left_child;
+	while(root->key != key){
+		if(key <= root->key)
+			root = root->left_child;
 		else
-			walk = walk->right_child;
+			root = root->right_child;
 
-		if(walk == NULL)
+		if(root == NULL)
 			break;
 	}
 
-	return walk;
+	return root;
 }
 
 Data *get_data(Node *node){
@@ -243,8 +239,24 @@ void inorder_tr(Node *root, node_handler_t function){
 }
 
 
-/*Stampa key nodo***************************************************************************/
+/*Informazioni sull'albero e i nodi***************************************************************************/
 
 void stampa_key(Node *node){
 	printf("Key: %d\n",node->key);
 }
+
+int num_nodi(Node *root){
+	if(root)
+		return 0;
+	int n = 1;
+	n += num_nodi(root->left_child);
+	n += num_nodi(root->right_child);
+	return n;
+}
+
+Node *find_root(Node *node){
+	while(!node->parent)
+		node = node->parent;
+	return node;
+}
+
