@@ -39,15 +39,15 @@ int del_head(Head *list);
 
 Head *mk_head(){
 
-	Head *head = (Head*) malloc(sizeof(Head));
+	Head *head = malloc(sizeof(Head));
 	head->size = 0;
 	return head;
 
 }
 
-Node *mk_node(int last_pos){
-	Node *node = (Node*) malloc(sizeof(Node));
-	node -> pos = last_pos+1;
+Node *mk_node(int pos){
+	Node *node = malloc(sizeof(Node));
+	node -> pos = pos;
 	return node;
 }
 
@@ -75,12 +75,14 @@ Node *get(Head *list, int posizioni){
 }
 
 
-void incr_list(Head *list){
+Node *incr_list(Head *list){
 
 	int size = list -> size;
 
+	Node *node;
+
 	if(size == 0){
-		Node *node = mk_node(-1);
+		node = mk_node(0);
 		list -> top = node;
 		//collegato a se stesso
 		node -> next = node;
@@ -88,23 +90,46 @@ void incr_list(Head *list){
 	}
 	else{
 		Node *lst_node = get(list,size-1);
-		Node *new_lst_node = lst_node -> next = mk_node(size-1);
+		node = lst_node -> next = mk_node(size);
 		//riallacciamo l' ultimo nodo al primo (top)
-		new_lst_node -> next = list -> top;
-		list -> top -> prev = new_lst_node;
+		node -> next = list -> top;
+		list -> top -> prev = node;
 		//allacciamento al penultimo nodo
-		new_lst_node -> prev = lst_node;
+		node -> prev = lst_node;
 	}
 
 	(list -> size)++;
+
+	return node;
+}
+
+Node *add_in_pos(Head *list, int pos){
+
+	if(list->size < pos+1)
+		return NULL;
+
+	Node *node_at_pos = get(list, pos);
+	Node *node = mk_node(pos);
+
+	for(unsigned int i = pos; i < size; i++)
+		(node_at_pos->pos)++;
+
+	node_at_pos -> prev -> next = node;
+	node_at_pos -> prev = node;
+
+	node->prev = node_at_pos->prev;
+	node->next = node_at_pos;
+
+	return node;
+
 }
 
 
-int del_node(Head *list, int pos){
+bool del_node(Head *list, int pos){
 
 	int size = list->size;
 	if(size == 0)
-		return -1; //errore, non esistono nodi
+		return false; //errore, non esistono nodi
 
 	if(pos < 0 || size <= pos){
 		pos = modulo(pos, size);
@@ -112,15 +137,20 @@ int del_node(Head *list, int pos){
 
 	Node *node = get(list,pos);
 
+	for(unsigned int i = pos; i < size-1; i++)
+		(node->next->pos)--;
+
 	node -> next -> prev = node -> prev;
 	//list -> next -> prev = node -> prev;  equivalente al precedente
 	node -> prev -> next = node -> next;
 
 	free(node);
+	
+
 
 	(list -> size)--;
 
-	return 0;
+	return true;
 }
 
 int del_head(Head *list){
