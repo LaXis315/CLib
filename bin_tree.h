@@ -28,7 +28,6 @@ bool lor = 0;
 typedef void (*node_handler_t) (Node * node);
 
 /*metodi***************************************************************/
-Tree *mk_tree(void);
 Node *mk_node(int key);
 void assign_data(Node *node, Data cluster_dati);
 Node *add_node(Node *root, int key);
@@ -46,7 +45,7 @@ void print_node_key(const Node* node);
 /*inizializzazione*****************************************************/
 
 Node *mk_node(int key){
-	Node *node = (Node*) malloc(sizeof(Node));
+	Node *node = malloc(sizeof(Node));
 	if(!node)
 		return NULL;
 	node -> parent = NULL;
