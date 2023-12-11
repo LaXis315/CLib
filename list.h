@@ -48,6 +48,8 @@ Head *mk_head(){
 Node *mk_node(int pos){
 	Node *node = malloc(sizeof(Node));
 	node -> pos = pos;
+	node -> next = NULL;
+	node -> prev = NULL;
 	return node;
 }
 
