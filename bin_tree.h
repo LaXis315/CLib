@@ -2,15 +2,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 
 
 /*struttura della lista************************************************/
-typedef struct Data Data;
-struct Data{
-	int age;
-	char nome[10];
-	int height;
-};
+// typedef struct Data Data;
+// struct Data{
+// 	int age;
+// 	char nome[10];
+// 	int height;
+// };
 
 
 typedef struct Node Node;
@@ -18,7 +19,8 @@ struct Node{
 	Node *parent;
 	Node *left_child, *right_child;
 	int key;
-	Data *data;
+	void *data;
+	size_t size; //size block of data
 };
 
 /*global parameters****************************************************/
@@ -29,14 +31,18 @@ typedef void (*node_handler_t) (Node * node);
 
 /*metodi***************************************************************/
 Node *mk_node(int key);
-void assign_data(Node *node, Data cluster_dati);
+bool assign_data(Node *node, void *cluster_dati, size_t size);
+Node *mk_node_w_data(int key, void *cluster_dati, size_t size);
 Node *add_node(Node *root, int key);
+Node *add_node_w_data(Node *root, int key, void *cluster_dati, size_t size);
+
 void del_node_by_key(Node *root, int key);
 void del_node_by_pointer(Node *node);
 void del_tree(Node *root);
+
 Node *find(Node *root, int key);
-Data *get_data(Node *node);
-Data *get_data_by_key(Node *root, int key);
+bool get_data(Node *node, void *buffer);
+bool get_data_by_key(Node *root, void *buffer, int key);
 void postorder_tr(Node *root, node_handler_t function);
 void preorder_tr(Node *root, node_handler_t function);
 void inorder_tr(Node *root, node_handler_t function);
@@ -52,18 +58,26 @@ Node *mk_node(int key){
 	node -> left_child = NULL;
 	node -> right_child = NULL;
 	node -> data = NULL;
+	node -> size = 0;
 	node -> key = key;
 	return node;
 }
 
-void assign_data(Node *node, Data cluster_dati){
-	node->data = malloc(sizeof(Data));
-	if(data == NULL)
-		return;
-	*(node->data) = cluster_dati;
+bool assign_data(Node *node, void *cluster_dati, size_t size){
+	node->data = malloc(size);
+	if(!node->data)
+		return false;
+	
+	memcpy(node->data, cluster_dati, size);
+	node->size = size;
+	return true;
 }
 
-/*Incremento************************************************************/
+Node *mk_node_w_data(int key, void *cluster_dati, size_t size){
+	Node *node = mk_node(key);
+	assign_data(node, cluster_dati, size);
+	return node;
+}
 
 Node *add_node(Node *root, int key){
 	Node **walk = &root;
@@ -84,12 +98,35 @@ Node *add_node(Node *root, int key){
 	return *walk;
 }
 
+Node *add_node_w_data(Node *root, int key, void *cluster_dati, size_t size){
+	Node *node = add_node(root,key);
+	assign_data(node, cluster_dati, size);
+	return node;
+}
+
 
 /*Liberazione di memoria**********************************************************/
 
 void del_node_by_key(Node *root, int key){
 	Node* node = find(root, key);
 	del_node_by_pointer(node);
+}
+
+static bool disconnect_parent(Node *node){
+	Node *parent = node->parent;
+
+	if(!parent)
+		return false;
+
+	Node *new_child = (!node->left_child ? node->right_child : node->left_child);
+
+	if(node->key <= parent->key)
+		parent->left_child = new_child;
+	else
+		parent->right_child = new_child;
+
+	return true;
+
 }
 
 static void bidirectional_p(Node *node){ //make the pointers of a node bidirectional (the parent and childs points at him)
@@ -139,26 +176,14 @@ void del_node_by_pointer(Node *node){
 		switch_nodes(leaf, node);
 	}
 	
-	Node *parent = node -> parent;
-
-	Node *child;
-	child = (node->left_child == NULL ? node->right_child : node->left_child);
-
-	if(node->key <= parent->key)
-		parent->left_child = child;
-	else
-		parent->right_child = child;
+	disconnect_parent(node);
 
 	free(node->data);
 	free(node);
 }
 
 static void del_leaf(Node *node){ //usare solo in del_tree()
-	//printf("Cancellazione nodo con key: %d\n", node->key);
-	if(node->key <= node->parent->key)
-		node->parent->left_child = NULL;
-	else
-		node->parent->right_child = NULL;
+	disconnect_parent(node);
 	
 	free(node->data);
 	free(node);
@@ -166,15 +191,7 @@ static void del_leaf(Node *node){ //usare solo in del_tree()
 
 void del_tree(Node *root){
 	node_handler_t deleter = del_leaf;
-
-	/*scollego il padre se esiste*/
-	if(root->parent != NULL)
-		if(root->key <= root->parent->key)
-			root->parent->left_child = NULL;
-		else
-			root->parent->right_child = NULL;
-
-	postorder_tr(tree->root, deleter);
+	postorder_tr(root, deleter);
 }
 
 /*Traversal, finder, and get data*************************************************************************/
@@ -192,19 +209,6 @@ Node *find(Node *root, int key){
 	}
 
 	return root;
-}
-
-Data *get_data(Node *node){
-	return node->data;
-}
-
-Data *get_data_by_key(Tree *tree, int key){
-	Node *node = find(tree, key);
-	if(!node)
-		return NULL;
-
-	return get_data(node);
-
 }
 
 void postorder_tr(Node *root, node_handler_t function){
@@ -245,7 +249,7 @@ void stampa_key(Node *node){
 }
 
 int num_nodi(Node *root){
-	if(root)
+	if(!root)
 		return 0;
 	int n = 1;
 	n += num_nodi(root->left_child);
@@ -277,5 +281,20 @@ int min_key(Node *node){
 
 int max_key(Node *node){
 	return rightmost_node(node)->key;
+}
+
+bool get_data(Node *node, void *buffer){
+	if(!node->data)
+		return false;
+	memcpy(buffer, node->data, node->size);
+	return true;
+}
+
+bool get_data_by_key(Node *root, void *buffer, int key){
+	Node *node = find(root, key);
+	if(!node)
+		return false;
+	
+	return get_data(node, buffer);
 }
 
